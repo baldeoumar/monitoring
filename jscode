@@ -1,0 +1,58 @@
+git remote add origin https://github.com/baldeoumar/monitoring.git
+git branch -M main
+git push -u origin main
+
+import * as echarts from 'echarts';
+
+var ROOT_PATH = 'https://echarts.apache.org/examples';
+
+var chartDom = document.getElementById('main');
+var myChart = echarts.init(chartDom, 'dark');
+var option;
+
+// Hexbin statistics code based on [d3-hexbin](https://github.com/d3/d3-hexbin)
+function hexBinStatistics(points, r) {
+  var dx = r * 2 * Math.sin(Math.PI / 3);
+  var dy = r * 1.5;
+  var binsById = {};
+  var bins = [];
+  for (var i = 0, n = points.length; i < n; ++i) {
+    var point = points[i];
+    var px = point[0];
+    var py = point[1];
+    if (isNaN(px) || isNaN(py)) {
+      continue;
+    }
+    var pj = Math.round((py = py / dy));
+    var pi = Math.round((px = px / dx - (pj & 1) / 2));
+    var py1 = py - pj;
+    if (Math.abs(py1) * 3 > 1) {
+      var px1 = px - pi;
+      var pi2 = pi + (px < pi ? -1 : 1) / 2;
+      var pj2 = pj + (py < pj ? -1 : 1);
+      var px2 = px - pi2;
+      var py2 = py - pj2;
+      if (px1 * px1 + py1 * py1 > px2 * px2 + py2 * py2) {
+        pi = pi2 + (pj & 1 ? 1 : -1) / 2;
+        pj = pj2;
+      }
+    }
+    var id = pi + '-' + pj;
+    var bin = binsById[id];
+    if (bin) {
+      bin.points.push(point);
+    } else {
+      bins.push((bin = binsById[id] = { points: [point] }));
+      bin.x = (pi + (pj & 1) / 2) * dx;
+      bin.y = pj * dy;
+    }
+  }
+  var maxBinLen = -Infinity;
+  for (var i = 0; i < bins.length; i++) {
+    maxBinLen = Math.max(maxBinLen, bins.length);
+  }
+  return {
+    maxBinLen: maxBinLen,
+    bins: bins
+  };
+}
